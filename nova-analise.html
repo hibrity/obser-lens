@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RiskLens AI — Nova Análise</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f172a; color: #f9fafb;
+      min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .header h1 { font-size: 1.3rem; }
+    .btn-back {
+      background: transparent; border: 1px solid rgba(255,255,255,0.1);
+      color: #f9fafb; padding: 8px 14px; border-radius: 10px;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.05); }
+
+    .card {
+      background: #111827; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    }
+
+    /* STEPS */
+    .steps {
+      display: flex; gap: 8px; margin-bottom: 24px; align-items: center;
+    }
+    .step {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: bold;
+      border: 2px solid rgba(255,255,255,0.1); color: #9ca3af;
+      flex-shrink: 0;
+    }
+    .step.active { border-color: #22c55e; color: #22c55e; background: rgba(34,197,94,0.1); }
+    .step.done { border-color: #22c55e; background: #22c55e; color: #052e16; }
+    .step-line { flex: 1; height: 2px; background: rgba(255,255,255,0.1); }
+    .step-line.done { background: #22c55e; }
+
+    /* FORM */
+    .form { display: flex; flex-direction: column; gap: 16px; }
+    label { display: flex; flex-direction: column; gap: 6px; color: #9ca3af; font-size: 0.9rem; }
+    select, textarea {
+      width: 100%; padding: 12px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(15,23,42,0.75);
+      color: #f9fafb; font-size: 1rem; outline: none; font-family: inherit;
+    }
+    select:focus, textarea:focus { border-color: #22c55e; }
+    select option { background: #1f2937; }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* PHOTO */
+    .photo-area {
+      border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px;
+      padding: 24px; text-align: center; cursor: pointer; min-height: 180px;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 10px; position: relative; overflow: hidden;
+      transition: all 0.2s;
+    }
+    .photo-area:hover { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.02); }
+    .photo-area.has-photo { border-style: solid; padding: 0; }
+    .photo-area img { width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; }
+    .photo-icon { font-size: 2.5rem; opacity: 0.5; }
+    .photo-text { color: #9ca3af; font-size: 0.9rem; }
+    .photo-hint { color: #6b7280; font-size: 0.75rem; }
+    .photo-remove {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(239,68,68,0.9); color: white; border: none;
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    }
+    .photo-remove:hover { background: #ef4444; }
+
+    /* BUTTONS */
+    .btn {
+      border: none; padding: 14px; border-radius: 10px;
+      font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%;
+    }
+    .btn-primary { background: #22c55e; color: #052e16; }
+    .btn-primary:hover { background: #16a34a; }
+    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { padding: 12px; border-radius: 10px; margin-top: 14px; font-size: 0.9rem; line-height: 1.4; }
+    .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fecaca; }
+    .alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #dcfce7; }
+    .alert-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #bfdbfe; }
+
+    /* QUESTIONS */
+    .question-item { margin-bottom: 14px; }
+    .question-label { color: #f9fafb; font-size: 0.9rem; margin-bottom: 6px; font-weight: bold; }
+
+    /* LOADING */
+    .loading-screen { text-align: center; padding: 60px 20px; }
+    .spinner {
+      width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: #22c55e; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-size: 1.2rem; margin-bottom: 8px; }
+    .loading-text { color: #9ca3af; font-size: 0.9rem; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>➕ Nova Análise</h1>
+      <button class="btn-back" onclick="window.location.href='dashboard.html'">← Voltar</button>
+    </div>
+
+    <!-- STEPS -->
+    <div class="steps">
+      <div class="step active" id="step1">1</div>
+      <div class="step-line" id="line1"></div>
+      <div class="step" id="step2">2</div>
+      <div class="step-line" id="line2"></div>
+      <div class="step" id="step3">3</div>
+    </div>
+
+    <!-- ===== ETAPA 1: FOTO E DADOS ===== -->
+    <div class="card" id="section-step1">
+      <div class="form">
+        <label>Foto da cena *</label>
+        <div class="photo-area" id="photo-area" onclick="document.getElementById('photo-input').click()">
+          <span class="photo-icon">📷</span>
+          <span class="photo-text">Clique para tirar ou escolher uma foto</span>
+          <span class="photo-hint">JPG, PNG — máx. 10 MB</span>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden" onchange="handlePhoto(event)" />
+
+        <label>
+          Tipo de ambiente *
+          <select id="env-type" onchange="onEnvChange()">
+            <option value="">Selecione...</option>
+            <option value="estrutura_fisica">🏗️ Estrutura física</option>
+            <option value="trabalho">👷 Trabalho</option>
+            <option value="residencial">🏠 Residencial</option>
+            <option value="comercial">🏪 Comercial</option>
+            <option value="publico">🏛️ Público</option>
+            <option value="area_externa">🌳 Área externa</option>
+            <option value="outro">📌 Outro</option>
+          </select>
+        </label>
+
+        <label>
+          Descrição do local *
+          <textarea id="env-desc" placeholder="Descreva o que está sendo analisado. Ex: Escada externa com corrimão enferrujado, piso molhado..."></textarea>
+        </label>
+
+        <div id="msg-step1"></div>
+
+        <button class="btn btn-primary" id="btn-step1" onclick="goToStep2()">
+          Continuar → Perguntas
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== ETAPA 2: PERGUNTAS ===== -->
+    <div class="card hidden" id="section-step2">
+      <h2 style="font-size:1.1rem; margin-bottom:6px;">❓ Perguntas de Segurança</h2>
+      <p style="color:#9ca3af; font-size:0.85rem; margin-bottom:20px;">
+        Responda conforme o que você observa no ambiente.
+      </p>
+
+      <div id="questions-list" class="form"></div>
+
+      <div id="msg-step2"></div>
+
+      <button class="btn btn-primary" id="btn-analyze" onclick="submitAnalysis()" style="margin-top:20px;">
+        🔍 Analisar Risco com IA
+      </button>
+    </div>
+
+    <!-- ===== ETAPA 3: LOADING ===== -->
+    <div class="card hidden" id="section-step3">
+      <div class="loading-screen">
+        <div class="spinner"></div>
+        <div class="loading-title">Analisando com IA...</div>
+        <div class="loading-text">
+          A inteligência artificial está avaliando a imagem e as respostas.<br/>
+          Isso pode levar de 5 a 20 segundos.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+    let photoBase64 = null;
+    let currentAnalysisId = null;
+    let selectedEnvType = "";
+
+    // =============================================
+    // INICIALIZAR
+    // =============================================
+    async function init() {
+      currentUser = await checkAuth();
+      if (!currentUser) return;
+    }
+
+    // =============================================
+    // FOTO
+    // =============================================
+    function handlePhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showMsg('msg-step1', 'Selecione uma imagem (JPG, PNG, etc).', 'error');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        showMsg('msg-step1', 'Imagem muito grande. Máximo 10 MB.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        photoBase64 = ev.target.result;
+        renderPhoto();
+        showMsg('msg-step1', '', '');
+        document.getElementById('msg-step1').innerHTML = '';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderPhoto() {
+      const area = document.getElementById('photo-area');
+      if (photoBase64) {
+        area.classList.add('has-photo');
+        area.innerHTML = `
+          <img src="${photoBase64}" alt="Foto da análise" />
+          <button class="photo-remove" onclick="removePhoto(event)">✕</button>
+        `;
+      } else {
+        area.classList.remove('has-photo');
+        area.innerHTML = `
+          <span class="photo-icon">📷</span>
+          <span class="photo-text">Clique para tirar ou escolher uma foto</span>
+          <span class="photo-hint">JPG, PNG — máx. 10 MB</span>
+        `;
+      }
+    }
+
+    function removePhoto(e) {
+      e.stopPropagation();
+      photoBase64 = null;
+      document.getElementById('photo-input').value = '';
+      renderPhoto();
+    }
+
+    // =============================================
+    // MUDANÇA DE AMBIENTE
+    // =============================================
+    function onEnvChange() {
+      selectedEnvType = document.getElementById('env-type').value;
+    }
+
+    // =============================================
+    // IR PARA ETAPA 2
+    // =============================================
+    function goToStep2() {
+      // Validações
+      if (!photoBase64) {
+        showMsg('msg-step1', 'Adicione uma foto da cena.', 'error');
+        return;
+      }
+      if (!selectedEnvType) {
+        showMsg('msg-step1', 'Selecione o tipo de ambiente.', 'error');
+        return;
+      }
+      const desc = document.getElementById('env-desc').value.trim();
+      if (!desc) {
+        showMsg('msg-step1', 'Descreva o local analisado.', 'error');
+        return;
+      }
+
+      // Atualizar steps
+      document.getElementById('step1').classList.add('done');
+      document.getElementById('line1').classList.add('done');
+      document.getElementById('step2').classList.add('active');
+
+      // Carregar perguntas
+      loadQuestions(selectedEnvType);
+
+      // Mostrar seção 2
+      document.getElementById('section-step1').classList.add('hidden');
+      document.getElementById('section-step2').classList.remove('hidden');
+
+      window.scrollTo(0, 0);
+    }
+
+    // =============================================
+    // CARREGAR PERGUNTAS
+    // =============================================
+    function loadQuestions(envType) {
+      const questions = questionsDB[envType] || questionsDB.outro;
+      const container = document.getElementById('questions-list');
+
+      container.innerHTML = questions.map(q => `
+        <div class="question-item">
+          <div class="question-label">${q.label}</div>
+          <select id="q-${q.key}" data-label="${q.label}">
+            <option value="">Selecione...</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+            <option value="nao_sei">Não sei informar</option>
+          </select>
+        </div>
+      `).join('');
+    }
+
+    // =============================================
+    // SUBMETER ANÁLISE
+    // =============================================
+    async function submitAnalysis() {
+      // Coletar respostas
+      const selects = document.querySelectorAll('#questions-list select');
+      const responses = [];
+      selects.forEach(sel => {
+        if (sel.value) {
+          responses.push({
+            question_key: sel.id.replace('q-', ''),
+            question_label: sel.dataset.label,
+            answer: sel.value
+          });
+        }
+      });
+
+      if (responses.length === 0) {
+        showMsg('msg-step2', 'Responda pelo menos uma pergunta.', 'error');
+        return;
+      }
+
+      // Desabilitar botão
+      const btnAnalyze = document.getElementById('btn-analyze');
+      btnAnalyze.disabled = true;
+      btnAnalyze.textContent = 'Enviando...';
+
+      try {
+        const desc = document.getElementById('env-desc').value.trim();
+
+        // 1. Salvar análise no banco
+        const { data: analysis, error: analysisError } = await sb
+          .from('analyses')
+          .insert({
+            user_id: currentUser.id,
+            title: 'Análise - ' + new Date().toLocaleDateString('pt-BR'),
+            environment_type: selectedEnvType,
+            description: desc,
+            status: 'processando'
+          })
+          .select()
+          .single();
+
+        if (analysisError) throw analysisError;
+        currentAnalysisId = analysis.id;
+
+        // 2. Salvar respostas
+        const responsesToInsert = responses.map(r => ({
+          analysis_id: currentAnalysisId,
+          user_id: currentUser.id,
+          question_key: r.question_key,
+          question_label: r.question_label,
+          answer: r.answer
+        }));
+
+        const { error: responsesError } = await sb.from('responses').insert(responsesToInsert);
+        if (responsesError) throw responsesError;
+
+        // 3. Mostrar loading
+        document.getElementById('step2').classList.add('done');
+        document.getElementById('line2').classList.add('done');
+        document.getElementById('step3').classList.add('active');
+        document.getElementById('section-step2').classList.add('hidden');
+        document.getElementById('section-step3').classList.remove('hidden');
+        window.scrollTo(0, 0);
+
+        // 4. Chamar IA via Edge Function
+        const result = await analyzeRisk(photoBase64, selectedEnvType, desc, responses);
+
+        // 5. Salvar resultado
+        const { error: resultError } = await sb.from('results').insert({
+          analysis_id: currentAnalysisId,
+          user_id: currentUser.id,
+          probability: result.probability || 0,
+          risk_level: result.risk_level || 'baixo',
+          severity: result.severity || 'leve',
+          confidence: result.confidence || 0,
+          risks: result.risks || [],
+          visual_evidences: result.visual_evidences || [],
+          immediate_recommendations: result.immediate_recommendations || [],
+          preventive_recommendations: result.preventive_recommendations || [],
+          forwarding: result.forwarding || 'nenhum',
+          ai_raw: { summary: result.summary }
+        });
+
+        if (resultError) throw resultError;
+
+        // 6. Atualizar status da análise
+        await sb.from('analyses')
+          .update({ status: 'concluido', updated_at: new Date().toISOString() })
+          .eq('id', currentAnalysisId);
+
+        // 7. Ir para resultado
+        window.location.href = 'resultado.html?id=' + currentAnalysisId;
+
+      } catch (error) {
+        console.error('Erro na análise:', error);
+
+        // Atualizar status como erro
+        if (currentAnalysisId) {
+          await sb.from('analyses')
+            .update({ status: 'erro' })
+            .eq('id', currentAnalysisId);
+        }
+
+        // Voltar para etapa 2 e mostrar erro
+        document.getElementById('section-step3').classList.add('hidden');
+        document.getElementById('section-step2').classList.remove('hidden');
+        document.getElementById('step2').classList.remove('done');
+        document.getElementById('step3').classList.remove('active');
+        document.getElementById('line2').classList.remove('done');
+
+        btnAnalyze.disabled = false;
+        btnAnalyze.textContent = '🔍 Analisar Risco com IA';
+
+        showMsg('msg-step2', 'Erro na análise: ' + error.message, 'error');
+      }
+    }
+
+    // =============================================
+    // INICIAR
+    // =============================================
+    init();
+  </script>
+</body>
+</html>
