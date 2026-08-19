@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RiskLens AI — Entrar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f172a; color: #f9fafb;
+      min-height: 100vh; display: flex;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .container { width: 100%; max-width: 420px; }
+    .logo { text-align: center; margin-bottom: 24px; }
+    .logo h1 { font-size: 1.8rem; }
+    .logo p { color: #9ca3af; margin-top: 6px; font-size: 0.9rem; }
+    .card {
+      background: #111827; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px;
+    }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .tab {
+      padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+      background: transparent; color: #f9fafb; cursor: pointer; font-weight: bold; font-size: 0.95rem;
+    }
+    .tab.active { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #dcfce7; }
+    .form { display: flex; flex-direction: column; gap: 14px; }
+    label { display: flex; flex-direction: column; gap: 6px; color: #9ca3af; font-size: 0.9rem; }
+    input {
+      width: 100%; padding: 13px 14px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(15,23,42,0.75);
+      color: #f9fafb; font-size: 1rem; outline: none;
+    }
+    input:focus { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.1); }
+    .btn {
+      border: none; padding: 14px; border-radius: 10px;
+      font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%;
+      background: #22c55e; color: #052e16; margin-top: 4px;
+    }
+    .btn:hover { background: #16a34a; }
+    .alert { padding: 12px; border-radius: 10px; margin-top: 14px; font-size: 0.9rem; line-height: 1.4; }
+    .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fecaca; }
+    .alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #dcfce7; }
+    .hidden { display: none !important; }
+    .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1>🔍 RiskLens AI</h1>
+      <p>Análise preventiva de riscos por foto</p>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">Entrar</button>
+        <button class="tab" id="tab-signup" onclick="switchTab('signup')">Criar conta</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="form-login" class="form" onsubmit="doLogin(event)">
+        <label>
+          E-mail
+          <input type="email" id="login-email" required placeholder="seu@email.com" autocomplete="email" />
+        </label>
+        <label>
+          Senha
+          <input type="password" id="login-password" required placeholder="Sua senha" autocomplete="current-password" />
+        </label>
+        <button type="submit" class="btn">Entrar</button>
+      </form>
+
+      <!-- CADASTRO -->
+      <form id="form-signup" class="form hidden" onsubmit="doSignup(event)">
+        <label>
+          Nome
+          <input type="text" id="signup-name" placeholder="Seu nome" autocomplete="name" />
+        </label>
+        <label>
+          E-mail
+          <input type="email" id="signup-email" required placeholder="seu@email.com" autocomplete="email" />
+        </label>
+        <label>
+          Senha
+          <input type="password" id="signup-password" minlength="6" required placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+        </label>
+        <button type="submit" class="btn">Criar conta</button>
+      </form>
+
+      <div id="auth-msg"></div>
+    </div>
+
+    <p class="footer">RiskLens AI — Prevenção inteligente de acidentes</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    // Se já estiver logado, ir direto para o dashboard
+    (async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        window.location.href = "dashboard.html";
+      }
+    })();
+
+    function switchTab(tab) {
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+      document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+      document.getElementById('auth-msg').innerHTML = '';
+    }
+
+    async function doLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        showMsg('auth-msg', error.message, 'error');
+        return;
+      }
+      window.location.href = "dashboard.html";
+    }
+
+    async function doSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { name } }
+      });
+
+      if (error) {
+        showMsg('auth-msg', error.message, 'error');
+        return;
+      }
+
+      if (data.session) {
+        window.location.href = "dashboard.html";
+      } else {
+        showMsg('auth-msg', 'Conta criada! Verifique seu e-mail para confirmar.', 'success');
+      }
+    }
+  </script>
+</body>
+</html>
