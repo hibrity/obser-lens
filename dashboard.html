@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RiskLens AI — Painel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f172a; color: #f9fafb;
+      min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .header h1 { font-size: 1.5rem; }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    .user-email {
+      color: #9ca3af; font-size: 0.85rem;
+      background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 999px;
+    }
+    .btn-logout {
+      background: transparent; border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5; padding: 8px 14px; border-radius: 10px;
+      cursor: pointer; font-size: 0.85rem; font-weight: bold;
+    }
+    .btn-logout:hover { background: rgba(239,68,68,0.1); }
+
+    .card {
+      background: #111827; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    }
+
+    .btn-new {
+      width: 100%; padding: 16px; border-radius: 12px;
+      border: none; background: #22c55e; color: #052e16;
+      font-size: 1.05rem; font-weight: bold; cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .btn-new:hover { background: #16a34a; }
+
+    h2 { font-size: 1.1rem; margin-bottom: 16px; color: #f9fafb; }
+
+    .history-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .history-item:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(34,197,94,0.3);
+    }
+    .history-info { flex: 1; }
+    .history-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; }
+    .history-meta { color: #9ca3af; font-size: 0.8rem; }
+
+    .badge {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 0.7rem; font-weight: bold;
+    }
+    .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge-red { background: rgba(239,68,68,0.15); color: #f87171; }
+    .badge-gray { background: rgba(255,255,255,0.08); color: #9ca3af; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; }
+    .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+    .empty-text { font-size: 0.95rem; line-height: 1.5; }
+
+    .loading { text-align: center; padding: 30px; color: #9ca3af; }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #22c55e; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; padding: 16px; text-align: center;
+    }
+    .stat-number { font-size: 1.8rem; font-weight: bold; color: #22c55e; }
+    .stat-label { color: #9ca3af; font-size: 0.75rem; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 RiskLens AI</h1>
+      <div class="header-right">
+        <span class="user-email" id="user-email">...</span>
+        <button class="btn-logout" onclick="doLogout()">Sair</button>
+      </div>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Total de análises</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-done">0</div>
+        <div class="stat-label">Concluídas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-pending">0</div>
+        <div class="stat-label">Pendentes</div>
+      </div>
+    </div>
+
+    <!-- BOTÃO NOVA ANÁLISE -->
+    <button class="btn-new" onclick="window.location.href='nova-analise.html'">
+      ➕ Nova Análise
+    </button>
+
+    <!-- HISTÓRICO -->
+    <div class="card">
+      <h2>📋 Histórico de Análises</h2>
+      <div id="history-list">
+        <div class="loading">
+          <div class="spinner"></div>
+          Carregando...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+
+    // =============================================
+    // INICIALIZAR
+    // =============================================
+    async function init() {
+      currentUser = await checkAuth();
+      if (!currentUser) return;
+
+      document.getElementById('user-email').textContent = currentUser.email;
+      await loadHistory();
+    }
+
+    // =============================================
+    // CARREGAR HISTÓRICO
+    // =============================================
+    async function loadHistory() {
+      const container = document.getElementById('history-list');
+
+      try {
+        const { data, error } = await sb
+          .from('analyses')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+
+        // Atualizar estatísticas
+        updateStats(data || []);
+
+        if (!data || data.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📷</div>
+              <div class="empty-text">
+                Nenhuma análise ainda.<br/>
+                Clique em <strong>Nova Análise</strong> para começar.
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = data.map(item => {
+          const badge = getStatusBadge(item.status);
+          const date = new Date(item.created_at).toLocaleDateString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+          });
+          const envLabel = envLabels[item.environment_type] || item.environment_type;
+
+          return `
+            <div class="history-item" onclick="viewAnalysis('${item.id}')">
+              <div class="history-info">
+                <div class="history-title">${item.title || 'Análise'}</div>
+                <div class="history-meta">${envLabel} · ${date}</div>
+              </div>
+              ${badge}
+            </div>
+          `;
+        }).join('');
+
+      } catch (error) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <div class="empty-text">Erro ao carregar histórico: ${error.message}</div>
+          </div>
+        `;
+      }
+    }
+
+    // =============================================
+    // ATUALIZAR ESTATÍSTICAS
+    // =============================================
+    function updateStats(analyses) {
+      const total = analyses.length;
+      const done = analyses.filter(a => a.status === 'concluido').length;
+      const pending = analyses.filter(a => a.status === 'pendente' || a.status === 'processando').length;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-done').textContent = done;
+      document.getElementById('stat-pending').textContent = pending;
+    }
+
+    // =============================================
+    // BADGE DE STATUS
+    // =============================================
+    function getStatusBadge(status) {
+      const badges = {
+        pendente: '<span class="badge badge-yellow">Pendente</span>',
+        processando: '<span class="badge badge-yellow">Processando</span>',
+        concluido: '<span class="badge badge-green">Concluído</span>',
+        erro: '<span class="badge badge-red">Erro</span>'
+      };
+      return badges[status] || '<span class="badge badge-gray">' + status + '</span>';
+    }
+
+    // =============================================
+    // VER ANÁLISE (resultado)
+    // =============================================
+    function viewAnalysis(analysisId) {
+      window.location.href = 'resultado.html?id=' + analysisId;
+    }
+
+    // =============================================
+    // INICIAR
+    // =============================================
+    init();
+  </script>
+</body>
+</html>
