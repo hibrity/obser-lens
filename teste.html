@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teste Edge Function</title>
+  <style>
+    body { font-family: Arial; background: #0f172a; color: #fff; padding: 40px; }
+    .box { background: #111827; padding: 24px; border-radius: 12px; max-width: 600px; margin: 0 auto; }
+    button { background: #22c55e; color: #000; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 8px 0; }
+    button:hover { background: #16a34a; }
+    pre { background: #000; padding: 16px; border-radius: 8px; overflow-x: auto; margin-top: 20px; font-size: 12px; white-space: pre-wrap; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; }
+    .ok { background: rgba(34,197,94,0.2); }
+    .erro { background: rgba(239,68,68,0.2); }
+    .carregando { background: rgba(59,130,246,0.2); }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🧪 Teste da Edge Function</h1>
+    <p>Este teste verifica se a Edge Function está funcionando.</p>
+    
+    <button onclick="testarConexao()">1️⃣ Testar Conexão</button>
+    <button onclick="testarComImagem()">2️⃣ Testar com Imagem Real</button>
+    
+    <div id="status"></div>
+    <pre id="resultado" style="display:none;"></pre>
+  </div>
+
+  <script>
+    const EDGE_FUNCTION_URL = "https://ejhfhvxdoxuhpziruqsi.supabase.co/functions/v1/analyze-risk";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqaGZodnhkb3h1aHB6aXJ1cXNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDc5NTMsImV4cCI6MjEwMjcyMzk1M30.xLrZr6qevOs1Y_WQOrUklwR_bdZAuQhcwGax9QEXh9I";
+
+    // Imagem de teste (pixel vermelho)
+    const IMAGEM_TESTE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+    async function testarConexao() {
+      const status = document.getElementById('status');
+      const resultado = document.getElementById('resultado');
+      
+      status.innerHTML = '<div class="status carregando">⏳ Testando conexão...</div>';
+      resultado.style.display = 'none';
+
+      try {
+        const response = await fetch(EDGE_FUNCTION_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            photo_base64: IMAGEM_TESTE,
+            environment_type: "teste",
+            description: "Teste de conexão",
+            responses: []
+          })
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text };
+        }
+        
+        if (response.ok) {
+          status.innerHTML = '<div class="status ok">✅ Edge Function respondeu com sucesso!</div>';
+        } else {
+          status.innerHTML = `<div class="status erro">❌ Erro ${response.status}</div>`;
+        }
+        
+        resultado.style.display = 'block';
+        resultado.textContent = JSON.stringify(data, null, 2);
+
+      } catch (error) {
+        status.innerHTML = `<div class="status erro">❌ Falha: ${error.message}</div>`;
+        resultado.style.display = 'block';
+        resultado.textContent = error.stack;
+      }
+    }
+
+    async function testarComImagem() {
+      alert('Escolha uma imagem para testar com análise real.');
+      
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const status = document.getElementById('status');
+          const resultado = document.getElementById('resultado');
+          
+          status.innerHTML = '<div class="status carregando">⏳ Analisando imagem com IA...</div>';
+          resultado.style.display = 'none';
+
+          try {
+            const response = await fetch(EDGE_FUNCTION_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({
+                photo_base64: ev.target.result,
+                environment_type: "residencial",
+                description: "Teste real com imagem",
+                responses: [
+                  { question_label: "É um teste?", answer: "sim" }
+                ]
+              })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+              status.innerHTML = '<div class="status ok">✅ Análise concluída!</div>';
+            } else {
+              status.innerHTML = `<div class="status erro">❌ Erro ${response.status}: ${data.error || 'Erro'}</div>`;
+            }
+            
+            resultado.style.display = 'block';
+            resultado.textContent = JSON.stringify(data, null, 2);
+
+          } catch (error) {
+            status.innerHTML = `<div class="status erro">❌ Falha: ${error.message}</div>`;
+            resultado.style.display = 'block';
+            resultado.textContent = error.stack;
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+      
+      input.click();
+    }
+  </script>
+</body>
+</html>
