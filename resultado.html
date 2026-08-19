@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RiskLens AI — Resultado</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f172a; color: #f9fafb;
+      min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .header h1 { font-size: 1.3rem; }
+    .btn-back {
+      background: transparent; border: 1px solid rgba(255,255,255,0.1);
+      color: #f9fafb; padding: 8px 14px; border-radius: 10px;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.05); }
+
+    .card {
+      background: #111827; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    }
+
+    /* RISK METER */
+    .risk-display { text-align: center; margin-bottom: 24px; }
+    .risk-number { font-size: 3.5rem; font-weight: bold; line-height: 1; }
+    .risk-label { color: #9ca3af; font-size: 0.9rem; margin-top: 4px; }
+    .risk-meter {
+      height: 14px; border-radius: 7px; background: rgba(255,255,255,0.05);
+      overflow: hidden; margin: 16px 0;
+    }
+    .risk-meter-fill { height: 100%; border-radius: 7px; transition: width 0.8s ease; }
+    .risk-badge {
+      display: inline-block; padding: 6px 16px; border-radius: 999px;
+      font-size: 0.85rem; font-weight: bold; margin-top: 8px;
+    }
+
+    /* SECTIONS */
+    .section { margin-bottom: 20px; }
+    .section-title {
+      font-size: 0.95rem; font-weight: bold; color: #9ca3af;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-item {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+      font-size: 0.9rem; line-height: 1.5;
+    }
+
+    /* SUMMARY */
+    .summary-box {
+      background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 12px; padding: 16px; margin-bottom: 20px;
+      font-size: 0.9rem; line-height: 1.6;
+    }
+
+    /* FORWARDING */
+    .forwarding-box {
+      border-radius: 12px; padding: 16px; margin-bottom: 20px;
+      font-size: 0.9rem; line-height: 1.5; display: flex; align-items: flex-start; gap: 10px;
+    }
+    .forwarding-none { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); }
+    .forwarding-monitor { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); }
+    .forwarding-maintenance { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+    .forwarding-technical { background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2); }
+    .forwarding-isolation { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+
+    /* BUTTONS */
+    .btn {
+      border: none; padding: 14px; border-radius: 10px;
+      font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%;
+      margin-bottom: 10px;
+    }
+    .btn-primary { background: #22c55e; color: #052e16; }
+    .btn-primary:hover { background: #16a34a; }
+    .btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #f9fafb; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+    /* ALERTS */
+    .alert { padding: 12px; border-radius: 10px; margin-top: 14px; font-size: 0.85rem; line-height: 1.4; }
+    .alert-warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #fef3c7; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 60px 20px; color: #9ca3af; }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: #22c55e; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .meta-info {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .meta-item {
+      background: rgba(255,255,255,0.03); border-radius: 10px; padding: 12px;
+    }
+    .meta-label { color: #9ca3af; font-size: 0.75rem; margin-bottom: 4px; }
+    .meta-value { font-size: 0.9rem; font-weight: bold; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Resultado da Análise</h1>
+      <button class="btn-back" onclick="window.location.href='dashboard.html'">← Voltar ao Painel</button>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loading-state" class="card">
+      <div class="loading">
+        <div class="spinner"></div>
+        Carregando resultado...
+      </div>
+    </div>
+
+    <!-- CONTEÚDO DO RESULTADO -->
+    <div id="result-content" class="hidden">
+
+      <!-- PROBABILIDADE -->
+      <div class="card">
+        <div class="risk-display">
+          <div class="risk-number" id="risk-probability">0%</div>
+          <div class="risk-label">Probabilidade de acidente</div>
+          <div class="risk-meter">
+            <div class="risk-meter-fill" id="risk-meter-fill" style="width:0%"></div>
+          </div>
+          <span class="risk-badge" id="risk-badge">-</span>
+        </div>
+
+        <div class="meta-info">
+          <div class="meta-item">
+            <div class="meta-label">Severidade potencial</div>
+            <div class="meta-value" id="risk-severity">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Confiança da IA</div>
+            <div class="meta-value" id="risk-confidence">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Tipo de ambiente</div>
+            <div class="meta-value" id="risk-envtype">-</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Data da análise</div>
+            <div class="meta-value" id="risk-date">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ENCAMINHAMENTO -->
+      <div id="forwarding-container"></div>
+
+      <!-- RESUMO -->
+      <div class="card" id="summary-card" style="display:none;">
+        <div class="section-title">📝 Resumo da Análise</div>
+        <div class="summary-box" id="risk-summary"></div>
+      </div>
+
+      <!-- RISCOS -->
+      <div class="card" id="risks-card" style="display:none;">
+        <div class="section-title">⚠️ Riscos Detectados</div>
+        <div id="risks-list"></div>
+      </div>
+
+      <!-- EVIDÊNCIAS -->
+      <div class="card" id="evidences-card" style="display:none;">
+        <div class="section-title">👁️ Evidências na Imagem</div>
+        <div id="evidences-list"></div>
+      </div>
+
+      <!-- AÇÕES IMEDIATAS -->
+      <div class="card" id="immediate-card" style="display:none;">
+        <div class="section-title">🚨 Ações Imediatas</div>
+        <div id="immediate-list"></div>
+      </div>
+
+      <!-- AÇÕES PREVENTIVAS -->
+      <div class="card" id="preventive-card" style="display:none;">
+        <div class="section-title">🛡️ Ações Preventivas</div>
+        <div id="preventive-list"></div>
+      </div>
+
+      <!-- AVISO LEGAL -->
+      <div class="alert alert-warning">
+        ⚠️ Esta análise é preventiva e gerada por inteligência artificial.
+        Não substitui avaliação técnica de profissional habilitado.
+        Em caso de risco iminente, isole a área e procure um especialista.
+      </div>
+
+      <!-- BOTÕES -->
+      <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="downloadPDF()">📄 Baixar Relatório PDF</button>
+        <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">← Voltar ao Painel</button>
+      </div>
+    </div>
+
+    <!-- ERRO -->
+    <div id="error-state" class="card hidden">
+      <div style="text-align:center; padding:30px; color:#fca5a5;">
+        <div style="font-size:2rem; margin-bottom:12px;">⚠️</div>
+        <p id="error-message">Erro ao carregar resultado.</p>
+        <button class="btn btn-secondary" style="margin-top:20px;" onclick="window.location.href='dashboard.html'">
+          Voltar ao Painel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null;
+    let analysisData = null;
+    let resultData = null;
+    let analysisId = null;
+
+    // =============================================
+    // INICIALIZAR
+    // =============================================
+    async function init() {
+      currentUser = await checkAuth();
+      if (!currentUser) return;
+
+      // Pegar ID da URL
+      const urlParams = new URLSearchParams(window.location.search);
+      analysisId = urlParams.get('id');
+
+      if (!analysisId) {
+        showError('Nenhuma análise especificada.');
+        return;
+      }
+
+      await loadData();
+    }
+
+    // =============================================
+    // CARREGAR DADOS
+    // =============================================
+    async function loadData() {
+      try {
+        // Carregar análise
+        const { data: analysis, error: analysisError } = await sb
+          .from('analyses')
+          .select('*')
+          .eq('id', analysisId)
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (analysisError) throw analysisError;
+        analysisData = analysis;
+
+        // Carregar resultado
+        const { data: result, error: resultError } = await sb
+          .from('results')
+          .select('*')
+          .eq('analysis_id', analysisId)
+          .single();
+
+        if (resultError) throw resultError;
+        resultData = result;
+
+        // Renderizar
+        renderResult();
+
+      } catch (error) {
+        showError('Erro ao carregar dados: ' + error.message);
+      }
+    }
+
+    // =============================================
+    // RENDERIZAR RESULTADO
+    // =============================================
+    function renderResult() {
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('result-content').classList.remove('hidden');
+
+      const riskColors = {
+        baixo: '#22c55e',
+        moderado: '#84cc16',
+        medio: '#f59e0b',
+        alto: '#f97316',
+        critico: '#ef4444'
+      };
+
+      const riskLabels = {
+        baixo: 'BAIXO',
+        moderado: 'MODERADO',
+        medio: 'MÉDIO',
+        alto: 'ALTO',
+        critico: 'CRÍTICO'
+      };
+
+      const severityLabels = {
+        leve: 'Leve',
+        moderada: 'Moderada',
+        grave: 'Grave',
+        muito_grave: 'Muito Grave',
+        catastrofica: 'Catastrófica'
+      };
+
+      const color = riskColors[resultData.risk_level] || '#22c55e';
+      const probability = resultData.probability || 0;
+
+      // Probabilidade
+      document.getElementById('risk-probability').textContent = probability + '%';
+      document.getElementById('risk-probability').style.color = color;
+      document.getElementById('risk-meter-fill').style.width = probability + '%';
+      document.getElementById('risk-meter-fill').style.background = color;
+
+      // Badge
+      const badge = document.getElementById('risk-badge');
+      badge.textContent = riskLabels[resultData.risk_level] || resultData.risk_level;
+      badge.style.background = color + '22';
+      badge.style.color = color;
+
+      // Meta info
+      document.getElementById('risk-severity').textContent = severityLabels[resultData.severity] || resultData.severity;
+      document.getElementById('risk-confidence').textContent = (resultData.confidence || 0) + '%';
+      document.getElementById('risk-envtype').textContent = envLabels[analysisData.environment_type] || analysisData.environment_type;
+      document.getElementById('risk-date').textContent = new Date(analysisData.created_at).toLocaleDateString('pt-BR');
+
+      // Encaminhamento
+      renderForwarding(resultData.forwarding);
+
+      // Resumo
+      if (resultData.ai_raw?.summary) {
+        document.getElementById('summary-card').style.display = 'block';
+        document.getElementById('risk-summary').textContent = resultData.ai_raw.summary;
+      }
+
+      // Riscos
+      if (resultData.risks?.length > 0) {
+        document.getElementById('risks-card').style.display = 'block';
+        document.getElementById('risks-list').innerHTML = resultData.risks
+          .map(r => `<div class="section-item">• ${r}</div>`).join('');
+      }
+
+      // Evidências
+      if (resultData.visual_evidences?.length > 0) {
+        document.getElementById('evidences-card').style.display = 'block';
+        document.getElementById('evidences-list').innerHTML = resultData.visual_evidences
+          .map(e => `<div class="section-item">• ${e}</div>`).join('');
+      }
+
+      // Ações imediatas
+      if (resultData.immediate_recommendations?.length > 0) {
+        document.getElementById('immediate-card').style.display = 'block';
+        document.getElementById('immediate-list').innerHTML = resultData.immediate_recommendations
+          .map(r => `<div class="section-item">• ${r}</div>`).join('');
+      }
+
+      // Ações preventivas
+      if (resultData.preventive_recommendations?.length > 0) {
+        document.getElementById('preventive-card').style.display = 'block';
+        document.getElementById('preventive-list').innerHTML = resultData.preventive_recommendations
+          .map(r => `<div class="section-item">• ${r}</div>`).join('');
+      }
+    }
+
+    // =============================================
+    // ENCAMINHAMENTO
+    // =============================================
+    function renderForwarding(forwarding) {
+      const container = document.getElementById('forwarding-container');
+      const configs = {
+        nenhum: {
+          class: 'forwarding-none',
+          icon: '✅',
+          title: 'Nenhuma ação adicional necessária',
+          text: 'O ambiente apresenta condições adequadas. Mantenha a manutenção preventiva.'
+        },
+        monitorar: {
+          class: 'forwarding-monitor',
+          icon: '👁️',
+          title: 'Monitorar periodicamente',
+          text: 'Recomenda-se monitorar a situação e realizar novas verificações periódicas.'
+        },
+        manutencao: {
+          class: 'forwarding-maintenance',
+          icon: '🔧',
+          title: 'Manutenção necessária',
+          text: 'É recomendável realizar manutenção corretiva no local analisado.'
+        },
+        avaliacao_tecnica: {
+          class: 'forwarding-technical',
+          icon: '👷',
+          title: 'Avaliação técnica recomendada',
+          text: 'Recomenda-se consultar um profissional habilitado para avaliação detalhada.'
+        },
+        isolamento_imediato: {
+          class: 'forwarding-isolation',
+          icon: '🚨',
+          title: 'ISOLAMENTO IMEDIATO',
+          text: 'Risco grave detectado! Isole a área imediatamente e não permita circulação até avaliação profissional.'
+        }
+      };
+
+      const config = configs[forwarding] || configs.nenhum;
+
+      container.innerHTML = `
+        <div class="forwarding-box ${config.class}">
+          <span style="font-size:1.5rem;">${config.icon}</span>
+          <div>
+            <strong>${config.title}</strong><br/>
+            <span style="font-size:0.85rem; opacity:0.9;">${config.text}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // =============================================
+    // GERAR PDF
+    // =============================================
+    function downloadPDF() {
+      if (!resultData || !analysisData) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+
+      const riskColors = {
+        baixo: [34, 197, 94],
+        moderado: [132, 204, 22],
+        medio: [245, 158, 11],
+        alto: [249, 115, 22],
+        critico: [239, 68, 68]
+      };
+
+      const riskLabels = {
+        baixo: 'BAIXO', moderado: 'MODERADO', medio: 'MÉDIO',
+        alto: 'ALTO', critico: 'CRÍTICO'
+      };
+
+      const severityLabels = {
+        leve: 'Leve', moderada: 'Moderada', grave: 'Grave',
+        muito_grave: 'Muito Grave', catastrofica: 'Catastrófica'
+      };
+
+      const forwardingLabels = {
+        nenhum: 'Nenhuma ação adicional necessária',
+        monitorar: 'Monitorar periodicamente',
+        manutencao: 'Manutenção necessária',
+        avaliacao_tecnica: 'Avaliação técnica recomendada',
+        isolamento_imediato: 'ISOLAMENTO IMEDIATO'
+      };
+
+      const color = riskColors[resultData.risk_level] || [34, 197, 94];
+
+      // ===== CABEÇALHO =====
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RiskLens AI', 105, y, { align: 'center' });
+      y += 8;
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      doc.text('Relatório de Análise de Risco', 105, y, { align: 'center' });
+      y += 6;
+
+      doc.setFontSize(9);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 105, y, { align: 'center' });
+      y += 12;
+
+      // Linha separadora
+      doc.setDrawColor(200);
+      doc.line(20, y, 190, y);
+      y += 10;
+
+      // ===== INFORMAÇÕES DA ANÁLISE =====
+      doc.setTextColor(0);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INFORMAÇÕES DA ANÁLISE', 20, y);
+      y += 7;
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Tipo de ambiente: ${envLabels[analysisData.environment_type] || analysisData.environment_type}`, 20, y);
+      y += 5;
+      doc.text(`Data: ${new Date(analysisData.created_at).toLocaleDateString('pt-BR')}`, 20, y);
+      y += 5;
+
+      // Descrição
+      if (analysisData.description) {
+        doc.text('Descrição:', 20, y);
+        y += 5;
+        const descLines = doc.splitTextToSize(analysisData.description, 170);
+        doc.text(descLines, 20, y);
+        y += descLines.length * 5 + 5;
+      }
+      y += 5;
+
+      // ===== RESULTADO =====
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESULTADO DA ANÁLISE', 20, y);
+      y += 8;
+
+      // Probabilidade com cor
+      doc.setFontSize(24);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(`${resultData.probability}%`, 20, y);
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text('probabilidade de acidente', 55, y);
+      y += 8;
+
+      doc.setTextColor(0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nível de risco: ${riskLabels[resultData.risk_level] || resultData.risk_level}`, 20, y);
+      y += 5;
+      doc.text(`Severidade potencial: ${severityLabels[resultData.severity] || resultData.severity}`, 20, y);
+      y += 5;
+      doc.text(`Confiança da IA: ${resultData.confidence}%`, 20, y);
+      y += 5;
+      doc.text(`Encaminhamento: ${forwardingLabels[resultData.forwarding] || resultData.forwarding}`, 20, y);
+      y += 8;
+
+      // ===== RESUMO =====
+      if (resultData.ai_raw?.summary) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('RESUMO', 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const summaryLines = doc.splitTextToSize(resultData.ai_raw.summary, 170);
+        doc.text(summaryLines, 20, y);
+        y += summaryLines.length * 5 + 5;
+      }
+
+      // ===== RISCOS =====
+      if (resultData.risks?.length > 0) {
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('RISCOS DETECTADOS', 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        resultData.risks.forEach(risk => {
+          const lines = doc.splitTextToSize(`• ${risk}`, 170);
+          doc.text(lines, 20, y);
+          y += lines.length * 5 + 2;
+        });
+        y += 3;
+      }
+
+      // ===== EVIDÊNCIAS =====
+      if (resultData.visual_evidences?.length > 0) {
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('EVIDÊNCIAS NA IMAGEM', 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        resultData.visual_evidences.forEach(ev => {
+          const lines = doc.splitTextToSize(`• ${ev}`, 170);
+          doc.text(lines, 20, y);
+          y += lines.length * 5 + 2;
+        });
+        y += 3;
+      }
+
+      // ===== AÇÕES IMEDIATAS =====
+      if (resultData.immediate_recommendations?.length > 0) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('AÇÕES IMEDIATAS', 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        resultData.immediate_recommendations.forEach(rec => {
+          const lines = doc.splitTextToSize(`• ${rec}`, 170);
+          doc.text(lines, 20, y);
+          y += lines.length * 5 + 2;
+        });
+        y += 3;
+      }
+
+      // ===== AÇÕES PREVENTIVAS =====
+      if (resultData.preventive_recommendations?.length > 0) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('AÇÕES PREVENTIVAS', 20, y);
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        resultData.preventive_recommendations.forEach(rec => {
+          const lines = doc.splitTextToSize(`• ${rec}`, 170);
+          doc.text(lines, 20, y);
+          y += lines.length * 5 + 2;
+        });
+        y += 3;
+      }
+
+      // ===== RODAPÉ =====
+      if (y > 260) { doc.addPage(); y = 20; }
+      y += 10;
+      doc.setDrawColor(200);
+      doc.line(20, y, 190, y);
+      y += 8;
+
+      doc.setFontSize(7);
+      doc.setTextColor(150);
+      doc.text(
+        'AVISO: Este relatório é uma análise preventiva gerada por inteligência artificial e não substitui',
+        20, y, { maxWidth: 170 }
+      );
+      y += 4;
+      doc.text(
+        'avaliação técnica de profissional habilitado. Em caso de risco iminente, isole a área e procure um especialista.',
+        20, y, { maxWidth: 170 }
+      );
+
+      // Salvar
+      const fileName = `risklens-analise-${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+    }
+
+    // =============================================
+    // ERRO
+    // =============================================
+    function showError(message) {
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('error-state').classList.remove('hidden');
+      document.getElementById('error-message').textContent = message;
+    }
+
+    // =============================================
+    // INICIAR
+    // =============================================
+    init();
+  </script>
+</body>
+</html>
